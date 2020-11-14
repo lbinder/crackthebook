@@ -1,6 +1,7 @@
 from __future__ import print_function
 import pickle
 import os.path
+import base64
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -8,10 +9,8 @@ from google.auth.transport.requests import Request
 # If modifying these scopes, delete the file token.pickle.
 SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
 
-def run():
-    """Shows basic usage of the Gmail API.
-    Lists the user's Gmail labels.
-    """
+def connect_to_gmail_api():
+    """ Connect to GMAIL API """
     creds = None
     # The file token.pickle stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
@@ -32,22 +31,28 @@ def run():
             pickle.dump(creds, token)
 
     service = build('gmail', 'v1', credentials=creds)
-
-    # Call the Gmail API
-    results = service.users().labels().list(userId='me').execute()
-    labels = results.get('labels', [])
-
-    if not labels:
-        print('No labels found.')
-    else:
-        print('Labels:')
-        for label in labels:
-            print(label['name'])
+    return service
 
 
-def main():
-    test = Vocab()
-    print(test.words["test"])
+def messages(service):
+    """ Retrieve message in inbox """
+    results = service.users().messages().list(userId='me', includeSpamTrash=False, q="from:me").execute()
+    email_content = ""
 
-if __name__=="__main__":
-    main()
+    for mail in results['messages']:
+        messages = service.users().messages().get(userId='me', id=mail["id"]).execute()
+        email_content += str(base64.urlsafe_b64decode(messages['payload']['parts'][0]['body']['data']))
+
+    return email_content
+
+
+def parse_email(email_content):
+    print(email_content.split(' '))
+    # Look for pattern '[last word or character in chapter name]\\r\\n' 
+
+
+def vocab():
+    service = connect_to_gmail_api()
+    email_content = messages(service)
+    vocab = parse_email(email_content)
+    
