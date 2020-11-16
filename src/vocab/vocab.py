@@ -1,5 +1,6 @@
 from __future__ import print_function
 import pickle
+import re
 import os.path
 import base64
 from googleapiclient.discovery import build
@@ -46,13 +47,34 @@ def messages(service):
     return email_content
 
 
+def valid(term):
+    if term == '':
+        return False
+
+    if "\\r" in term:
+        return False
+    
+    if "\\n" in term:
+        return False
+
+    return True
+
+
 def parse_email(email_content):
-    print(email_content.split(' '))
-    # Look for pattern '[last word or character in chapter name]\\r\\n' 
+    regex = r"\\r\\n\S*\\r\\n"
+    matches = re.finditer(regex, email_content)
+    words = {}
+    for match in matches:
+        term = match.group()[4:-4]
+        if valid(term):
+            #print(term)
+            words[term] = ""
+    print(count)
+    return words
 
 
 def vocab():
     service = connect_to_gmail_api()
     email_content = messages(service)
-    vocab = parse_email(email_content)
+    words = parse_email(email_content)
     
